@@ -273,4 +273,305 @@ Tests.prototype.FileTests = function() {
         ok(typeof writer.abort != 'undefined' && writer.abort != null, "writer.abort should not be null.");
         ok(typeof writer.abort == 'function', "writer.abort should be a function.");
     });    
+    module('LocalFileSystem model');
+    test("should contain a window.requestFileSystem function", function() {
+        expect(2);
+        ok(typeof window.requestFileSystem != 'undefined' && window.requestFileSystem != null, "window.requestFileSystem should not be null.");
+        ok(typeof window.requestFileSystem == 'function', "window.requestFileSystem should be a function.");
+    });
+    test("should contain a window.resolveLocalFileSystemURI function", function() {
+        expect(2);
+        ok(typeof window.resolveLocalFileSystemURI != 'undefined' && window.resolveLocalFileSystemURI != null, "window.resolveLocalFileSystemURI should not be null.");
+        ok(typeof window.resolveLocalFileSystemURI == 'function', "window.resolveLocalFileSystemURI should be a function.");
+    });
+    module('Metadata model');
+    test("should be able to define a Metadata object", function() {
+        expect(2);
+        var metadata = new Metadata();
+        ok(metadata != null, "new Metadata() should not be null.");
+        ok(typeof metadata.modificationTime != 'undefined', "new Metadata() should include a 'modificationTime' property.");
+    }); 
+    module('Flags model');
+    test("should be able to define a Metadata object", function() {
+        expect(3);
+        var flags = new Flags(false, true);
+        ok(flags != null, "new Flags() should not be null.");
+        ok(typeof flags.create != 'undefined' && flags.create != null && flags.create == false, "new Flags() should include a 'create' property.");
+        ok(typeof flags.exclusive != 'undefined' && flags.exclusive != null && flags.exclusive == true, "new Flags() should include a 'exclusive' property.");
+    }); 
+    module('FileSystem model');
+    test("request persistent file system", function() {
+        QUnit.stop(tests.TEST_TIMEOUT);
+        expect(3);
+
+        var testPersistent = function(fileSystem) {
+            ok(fileSystem != null, "fileSystem should not be null.");
+            ok(typeof fileSystem.name != 'undefined' && fileSystem.name != null && fileSystem.name == "persistent", "filesystem should include a 'name' property.");
+            ok(typeof fileSystem.root != 'undefined' && fileSystem.root != null, "filesystem should include a 'root' property.");
+            QUnit.start();
+        };
+        
+        // Request the file system
+        window.requestFileSystem(1, 0, testPersistent, null);
+    });
+    test("request temporary file system", function() {
+        QUnit.stop(tests.TEST_TIMEOUT);
+        expect(3);
+
+        var testTemporary = function(fileSystem) {
+            ok(fileSystem != null, "fileSystem should not be null.");
+            ok(typeof fileSystem.name != 'undefined' && fileSystem.name != null && fileSystem.name == "temporary", "filesystem should include a 'name' property.");
+            ok(typeof fileSystem.root != 'undefined' && fileSystem.root != null, "filesystem should include a 'root' property.");
+            QUnit.start();
+        };
+        
+        // Request the file system
+        window.requestFileSystem(0, 0, testTemporary, null);
+    });
+    test("request a file system that is too large", function() {
+        QUnit.stop(tests.TEST_TIMEOUT);
+        expect(2);
+
+        var failFS = function(error) {
+            ok(error != null, "error should not be null.");
+            ok(typeof error.code != 'undefined' && error.code != null && error.code == FileError.QUOTA_EXCEEDED_ERR, "Shoud get an error code of FileError.QUOTA_EXCEEDED_ERR.");
+            QUnit.start();
+        };
+        
+        // Request the file system
+        window.requestFileSystem(0, 1000000000000000, null, failFS);
+    });
+    test("request a file system that does not exist", function() {
+        QUnit.stop(tests.TEST_TIMEOUT);
+        expect(2);
+
+        var failFS = function(error) {
+            ok(error != null, "error should not be null.");
+            ok(typeof error.code != 'undefined' && error.code != null && error.code == FileError.SYNTAX_ERR, "Shoud get an error code of FileError.SYNTAX_ERR.");
+            QUnit.start();
+        };
+        
+        // Request the file system
+        window.requestFileSystem(7, 0, null, failFS);
+    });
+    module("resolveLocalFileSystemURI tests");
+    test("on invalid file name", function() {
+        QUnit.stop(tests.TEST_TIMEOUT);
+        expect(2);
+
+        var failURI = function(error) {
+            ok(error != null, "error should not be null.");
+            ok(typeof error.code != 'undefined' && error.code != null && error.code == FileError.NOT_FOUND_ERR, "Shoud get an error code of FileError.NOT_FOUND_ERR.");
+            QUnit.start();
+        };
+        
+        // Request the file system
+        window.resolveLocalFileSystemURI("file:///this.is.not.a.valid.file.txt", null, failURI);
+    });
+    test("on invalid URL", function() {
+        QUnit.stop(tests.TEST_TIMEOUT);
+        expect(2);
+
+        var failURI = function(error) {
+            ok(error != null, "error should not be null.");
+            ok(typeof error.code != 'undefined' && error.code != null && error.code == FileError.ENCODING_ERR, "Shoud get an error code of FileError.ENCODING_ERR.");
+            QUnit.start();
+        };
+        
+        // Request the file system
+        window.resolveLocalFileSystemURI("/this.is.not.a.valid.url", null, failURI);
+    });
+    test("on root directory", function() {
+        QUnit.stop(tests.TEST_TIMEOUT);
+        expect(25);
+
+        var testURI = function(entry) {
+            ok(entry != null, "entry should not be null.");
+            ok(typeof entry.isFile != 'undefined' && entry.isFile != null && entry.isFile == false, "entry should include a 'isFile' property.");
+            ok(typeof entry.isDirectory != 'undefined' && entry.isDirectory != null && entry.isDirectory == true, "entry should include a 'isDirectory' property.");
+            ok(typeof entry.name != 'undefined' && entry.name != null, "entry should include a 'name' property.");
+            ok(typeof entry.fullPath != 'undefined' && entry.fullPath != null, "entry should include a 'fullPath' property.");
+            ok(typeof entry.getMetadata != 'undefined' && entry.getMetadata != null, "entry.getMetadata should not be null.");
+            ok(typeof entry.getMetadata == 'function', "entry.getMetadata should be a function.");
+            ok(typeof entry.moveTo != 'undefined' && entry.moveTo != null, "entry.moveTo should not be null.");
+            ok(typeof entry.moveTo == 'function', "entry.moveTo should be a function.");
+            ok(typeof entry.copyTo != 'undefined' && entry.copyTo != null, "entry.copyTo should not be null.");
+            ok(typeof entry.copyTo == 'function', "entry.copyTo should be a function.");
+            ok(typeof entry.toURI != 'undefined' && entry.toURI != null, "entry.toURI should not be null.");
+            ok(typeof entry.toURI == 'function', "entry.toURI should be a function.");
+            ok(typeof entry.remove != 'undefined' && entry.remove != null, "entry.remove should not be null.");
+            ok(typeof entry.remove == 'function', "entry.remove should be a function.");
+            ok(typeof entry.getParent != 'undefined' && entry.getParent != null, "entry.getParent should not be null.");
+            ok(typeof entry.getParent == 'function', "entry.getParent should be a function.");
+            ok(typeof entry.createReader != 'undefined' && entry.createReader != null, "entry.createReader should not be null.");
+            ok(typeof entry.createReader == 'function', "entry.createReader should be a function.");
+            ok(typeof entry.getFile != 'undefined' && entry.getFile != null, "entry.getFile should not be null.");
+            ok(typeof entry.getFile == 'function', "entry.getFile should be a function.");
+            ok(typeof entry.getDirectory != 'undefined' && entry.getDirectory != null, "entry.getDirectory should not be null.");
+            ok(typeof entry.getDirectory == 'function', "entry.getDirectory should be a function.");
+            ok(typeof entry.removeRecursively != 'undefined' && entry.removeRecursively != null, "entry.removeRecursively should not be null.");
+            ok(typeof entry.removeRecursively == 'function', "entry.removeRecursively should be a function.");
+            QUnit.start();
+        };
+        
+        window.resolveLocalFileSystemURI("file://" + FILE_ROOT, testURI, null);
+    });
+    test("on a file", function() {
+        QUnit.stop(tests.TEST_TIMEOUT);
+        expect(21);
+        
+        var testURI = function(entry) {
+            console.log("FULL PATH : " + entry.fullPath);
+            console.log("FILE ROOT : " + FILE_ROOT);
+            ok(entry != null, "entry should not be null.");
+            ok(typeof entry.isFile != 'undefined' && entry.isFile != null && entry.isFile == true, "entry should include a 'isFile' property.");
+            ok(typeof entry.isDirectory != 'undefined' && entry.isDirectory != null && entry.isDirectory == false, "entry should include a 'isDirectory' property.");
+            ok(typeof entry.name != 'undefined' && entry.name != null && entry.name == "resolveURI.txt", "entry should include a 'name' property.");
+            ok(typeof entry.fullPath != 'undefined' && entry.fullPath != null, "entry should include a 'fullPath' property.");
+            ok(typeof entry.getMetadata != 'undefined' && entry.getMetadata != null, "entry.getMetadata should not be null.");
+            ok(typeof entry.getMetadata == 'function', "entry.getMetadata should be a function.");
+            ok(typeof entry.moveTo != 'undefined' && entry.moveTo != null, "entry.moveTo should not be null.");
+            ok(typeof entry.moveTo == 'function', "entry.moveTo should be a function.");
+            ok(typeof entry.copyTo != 'undefined' && entry.copyTo != null, "entry.copyTo should not be null.");
+            ok(typeof entry.copyTo == 'function', "entry.copyTo should be a function.");
+            ok(typeof entry.toURI != 'undefined' && entry.toURI != null, "entry.toURI should not be null.");
+            ok(typeof entry.toURI == 'function', "entry.toURI should be a function.");
+            ok(typeof entry.remove != 'undefined' && entry.remove != null, "entry.remove should not be null.");
+            ok(typeof entry.remove == 'function', "entry.remove should be a function.");
+            ok(typeof entry.getParent != 'undefined' && entry.getParent != null, "entry.getParent should not be null.");
+            ok(typeof entry.getParent == 'function', "entry.getParent should be a function.");
+            ok(typeof entry.createWriter != 'undefined' && entry.createWriter != null, "entry.createWriter should not be null.");
+            ok(typeof entry.createWriter == 'function', "entry.createWriter should be a function.");
+            ok(typeof entry.file != 'undefined' && entry.file != null, "entry.file should not be null.");
+            ok(typeof entry.file == 'function', "entry.file should be a function.");
+            QUnit.start();
+        };
+                
+        // Request the file uri
+        var checkFile = function(entry) {
+            console.log("WE GOT TO THE CHECK FILE");
+            window.resolveLocalFileSystemURI("file://" + FILE_ROOT + "/resolveURI.txt", testURI, null);         
+        } 
+        
+        // Create the file if it does not exist.
+        var getRootFS = function(fileSystem) {
+            console.log("WE GOT TO THE ROOT FS");
+            fileSystem.root.getFile("resolveURI.txt", {"create":true, "exclusive":false}, checkFile, null);
+        };
+        
+        // Request the file system
+        window.requestFileSystem(1, 0, getRootFS, null);
+    });
+    module("Entry.getMetadata tests");
+    test("on valid file name", function() {
+        QUnit.stop(tests.TEST_TIMEOUT);
+        expect(2);
+        
+        var testMetadata = function(metadata) {
+            ok(metadata != null, "metadata should not be null.");
+            ok(typeof metadata.modificationTime != 'undefined' && metadata.modificationTime != null && metadata.modificationTime instanceof Date, "Shoud get a modificationTime.");
+            QUnit.start();
+        };
+
+        var testGetFile = function(file) {
+            file.getMetadata(testMetadata, null);
+        };
+
+        var testPersistent = function(fileSystem) {
+            fileSystem.root.getFile("metadata.txt", {"create":true, "exclusive":false}, testGetFile, null);
+        };
+        
+        // Request the file system
+        window.requestFileSystem(1, 0, testPersistent, null);
+    });
+    test("on valid directory name", function() {
+        QUnit.stop(tests.TEST_TIMEOUT);
+        expect(2);
+        
+        var testMetadata = function(metadata) {
+            ok(metadata != null, "metadata should not be null.");
+            ok(typeof metadata.modificationTime != 'undefined' && metadata.modificationTime != null && metadata.modificationTime instanceof Date, "Shoud get a modificationTime.");
+            QUnit.start();
+        };
+
+        var testGetDir = function(directory) {
+            directory.getMetadata(testMetadata, null);
+        };
+
+        var testPersistent = function(fileSystem) {
+            fileSystem.root.getDirectory("metadataDir", {"create":true, "exclusive":false}, testGetDir, null);
+        };
+        
+        // Request the file system
+        window.requestFileSystem(1, 0, testPersistent, null);
+    });
+    module("Entry.getParent tests");
+    test("on valid file name on the root of the FS", function() {
+        QUnit.stop(tests.TEST_TIMEOUT);
+        expect(2);
+        
+        var rootFS = null;
+        
+        var testParent = function(directory) {
+            ok(directory != null, "parent directory should not be null.");
+            ok(rootFS.fullPath == directory.fullPath, "Root FS full path should be the same as getParent result");
+            QUnit.start();
+        };
+
+        var testGetFile = function(file) {
+            file.getParent(testParent, null);
+        };
+
+        var testPersistent = function(fileSystem) {
+            rootFS = fileSystem.root;
+            fileSystem.root.getFile("metadata.txt", {"create":true, "exclusive":false}, testGetFile, null);
+        };
+        
+        // Request the file system
+        window.requestFileSystem(1, 0, testPersistent, null);
+    });
+    test("on valid directory name on the root of the FS", function() {
+        QUnit.stop(tests.TEST_TIMEOUT);
+        expect(2);
+        
+        var rootFS = null;
+        
+        var testParent = function(directory) {
+            ok(directory != null, "parent directory should not be null.");
+            ok(rootFS.fullPath == directory.fullPath, "Root FS full path should be the same as getParent result");
+            QUnit.start();
+        };
+
+        var testGetDir = function(directory) {
+            directory.getParent(testParent, null);
+        };
+
+        var testPersistent = function(fileSystem) {
+            rootFS = fileSystem.root;
+            fileSystem.root.getDirectory("metadataDir", {"create":true, "exclusive":false}, testGetDir, null);
+        };
+        
+        // Request the file system
+        window.requestFileSystem(1, 0, testPersistent, null);
+    });
+    test("on the root FS itself", function() {
+        QUnit.stop(tests.TEST_TIMEOUT);
+        expect(2);
+        
+        var rootFS = null;
+        
+        var testParent = function(directory) {
+            ok(directory != null, "parent directory should not be null.");
+            ok(rootFS.fullPath == directory.fullPath, "Root FS full path should be the same as getParent result");
+            QUnit.start();
+        };
+
+        var testPersistent = function(fileSystem) {
+            rootFS = fileSystem.root;
+            fileSystem.root.getParent(testParent, null);
+        };
+        
+        // Request the file system
+        window.requestFileSystem(1, 0, testPersistent, null);
+    });
 };
