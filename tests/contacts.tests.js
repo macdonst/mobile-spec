@@ -9,20 +9,48 @@ Tests.prototype.ContactsTests = function() {
 		ok(typeof navigator.contacts.find != 'undefined' && navigator.contacts.find != null, "navigator.contacts.find should not be null.");
 		ok(typeof navigator.contacts.find == 'function', "navigator.contacts.find should be a function.");
 	});
-	test("contacts.find success callback should be called with an array", function() {
-		expect(2);
-		QUnit.stop(Tests.TEST_TIMEOUT);
-		var win = function(result) {
-			ok(typeof result == 'object', "Object returned in contacts.find success callback is of type 'object' (actually array).");
-			ok(typeof result.length == 'number', "Object returned in contacts.find success callback has a length property which is numerical.");
-			QUnit.start();
-		};
-		var fail = function() { QUnit.start(); };
-		var obj = new ContactFindOptions();
-		obj.filter="";
-		obj.multiple=true;
-		navigator.contacts.find(["displayName", "name", "phoneNumbers", "emails"], win, fail, obj);
-	});	
+    test("contacts.find success callback should be called with an array", function() {
+        expect(2);
+        QUnit.stop(Tests.TEST_TIMEOUT);
+        var win = function(result) {
+            ok(typeof result == 'object', "Object returned in contacts.find success callback is of type 'object' (actually array).");
+            ok(typeof result.length == 'number', "Object returned in contacts.find success callback has a length property which is numerical.");
+            QUnit.start();
+        };
+        var fail = function() { QUnit.start(); };
+        var obj = new ContactFindOptions();
+        obj.filter="";
+        obj.multiple=true;
+        navigator.contacts.find(["displayName", "name", "phoneNumbers", "emails"], win, fail, obj);
+    }); 
+    test("contacts.find success callback should not be null", function() {
+        expect(1);
+        var fail = function() {};
+        var obj = new ContactFindOptions();
+        obj.filter="";
+        obj.multiple=true;
+        try {
+            navigator.contacts.find(["displayName", "name", "emails", "phoneNumbers"], null, fail, obj);
+        } catch(e) {
+            ok(true, "Trying to find with a null success call back should throw TypeError.");
+        }
+    }); 
+    test("contacts.find error callback should be called when no fields are specified", function() {
+        expect(2);
+        QUnit.stop(Tests.TEST_TIMEOUT);
+        var win = function(result) {
+            QUnit.start();
+        };
+        var fail = function(result) { 
+            ok(typeof result == 'object', "Object returned in contact.find failure callback is of type 'object' (actually ContactError).");
+            ok(result.code == ContactError.INVALID_ARGUMENT_ERROR, "Object returned in contacts.find failure callback has a code property which equal to ContactError.INVALID_ARGUMENT_ERROR.");
+            QUnit.start(); 
+        };
+        var obj = new ContactFindOptions();
+        obj.filter="";
+        obj.multiple=true;
+        navigator.contacts.find([], win, fail, obj);
+    }); 
 	test("should contain a create function", function() {
 		expect(2);
 		ok(typeof navigator.contacts.create != 'undefined' && navigator.contacts.create != null, "navigator.contacts.create should not be null.");
@@ -165,7 +193,7 @@ Tests.prototype.ContactsTests = function() {
 		};
 		var fail = function(result) {
 			ok(typeof result == 'object', "Object returned in contact.remove failure callback is of type 'object' (actually ContactError).");
-			ok(result.code == ContactError.NOT_FOUND_ERROR, "Object returned in contacts.remove failure callback has a code property which equal to ContactError.NOT_FOUND_ERROR.");
+			ok(result.code == ContactError.UNKNOWN_ERROR, "Object returned in contacts.remove failure callback has a code property which equal to ContactError.UNKNOWN_ERROR.");
 			QUnit.start();
 		};
 		var contact = new Contact(99);
